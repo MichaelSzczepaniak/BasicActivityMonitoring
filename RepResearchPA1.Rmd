@@ -5,12 +5,41 @@ output:
     keep_md: true
 ---
 
-
 ## Loading and preprocessing the data
-fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
-download.file(fileUrl)
+```{r}
+library(downloader)
+library(utils)
+dataDir <- "data"
+if(!file.exists(dataDir)) {
+    dir.create(file.path(".", dataDir))
+} else {
+    unlink(file.path(".", dataDir), recursive = TRUE)
+    dir.create(file.path(".", dataDir))
+}
+#fileUrl <- "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+fileUrl <- paste0("https://github.com/MichaelSzczepaniak/",
+                  "RepData_PeerAssessment1/raw/master/activity.zip")
+renameZipTo <- "data.zip"
+renameDataTo <- "data.csv"
+download(fileUrl, file.path(".", dataDir, renameZipTo))
+zipFiles <- unzip(file.path(".", dataDir, renameZipTo), list = TRUE)
+csvFile <- zipFiles$Name[1] # there should only be one file in this zip archive
+unzip(file.path(".", dataDir, renameZipTo), exdir = file.path(".", dataDir))
+dataFiles <- list.files(file.path(".", dataDir))
+success <- file.rename(file.path(".", dataDir, csvFile),
+                       file.path(".", dataDir, renameDataTo))
+activity.data <- read.csv(file.path(".", dataDir, renameDataTo), header = TRUE)
 
+```
+### Number of NA in the **steps** field
+```{r}
+sum(is.na(activity.data$steps))
+```
+### Number of records that have values in the **steps** field
 
+```{r}
+length(activity.data$steps) - sum(is.na(activity.data$steps))
+```
 ## What is mean total number of steps taken per day?
 
 
