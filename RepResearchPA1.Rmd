@@ -6,6 +6,7 @@ output:
 ---
 
 ## Loading and preprocessing the data
+
 ```{r}
 library(downloader)
 library(utils)
@@ -42,7 +43,20 @@ length(activity.data$steps) - sum(is.na(activity.data$steps))
 ```
 ## What is mean total number of steps taken per day?
 
+```{r}
+suppressMessages(suppressWarnings(require(dplyr)))
+activity.data.nonas <- filter(activity.data, !is.na(steps))
+activity.byday <- group_by(activity.data.nonas, date)
+activity.summ <- summarize(activity.byday, Total.Steps = sum(steps),
+                                           Mean.Steps = mean(steps),
+                                           Median.Steps = median(steps))
+steps.mean <- mean(activity.summ$Total.Steps)
+steps.median <- median(activity.summ$Total.Steps)
+hist(activity.summ$Total.Steps)
+```
 
+The mean number of steps taken per day was `r steps.mean`  
+The median number of steps taken per day was `r steps.median`  
 
 ## What is the average daily activity pattern?
 
