@@ -10,6 +10,7 @@ output:
 ```{r}
 library(downloader)
 library(utils)
+library(ggplot2)
 dataDir <- "data"
 if(!file.exists(dataDir)) {
     dir.create(file.path(".", dataDir))
@@ -44,15 +45,22 @@ length(activity.data$steps) - sum(is.na(activity.data$steps))
 ## What is mean total number of steps taken per day?
 
 ```{r}
+options(scipen = 3, digits = 2)
 suppressMessages(suppressWarnings(require(dplyr)))
 activity.data.nonas <- filter(activity.data, !is.na(steps))
 activity.byday <- group_by(activity.data.nonas, date)
 activity.summ <- summarize(activity.byday, Total.Steps = sum(steps),
-                                           Mean.Steps = mean(steps),
-                                           Median.Steps = median(steps))
+                                           Mean.Steps = mean(steps))
 steps.mean <- mean(activity.summ$Total.Steps)
 steps.median <- median(activity.summ$Total.Steps)
-hist(activity.summ$Total.Steps)
+#hist(activity.summ$Total.Steps) # base plotting system
+p <- ggplot(activity.summ, aes(x = Total.Steps))
+p <- p + geom_histogram(colour = "darkgreen", fill = "white", binwidth = 1000)
+p <- p + scale_y_continuous(breaks=seq(0, 11, 1))  # Ticks from 0-11, every 1
+p <- p + ggtitle("Total Daily Steps Taken 2012-10-02 thru 2012-11-29")
+p <- p + labs(x = "Total Daily Steps")
+# add vertical line for mean and median
+print(p)
 ```
 
 The mean number of steps taken per day was `r steps.mean`  
@@ -60,6 +68,41 @@ The median number of steps taken per day was `r steps.median`
 
 ## What is the average daily activity pattern?
 
+The **interval** field of the activity data records a data point every 5 
+minutes, but when it gets to 55, it jumps to 100 in order to designate that an 
+hour has passed.  Leaving the data in this form would create large gaps in the 
+time series plot of the averages, the following code normalizes these value 
+to remove these gaps
+
+```{r}
+activity.nonas.norm.time <- data.frame(steps = activity.data.nonas$steps,
+                                       date = activity.data.nonas$date,
+                                       interval = activity.data.nonas$interval)
+for(i in 2:length(activity.data.nonas$interval)) {
+    if(activity.data.nonas$interval[i] >= 100) {
+        hours <- trunc(activity.data.nonas$interval[i] / 100)
+        mins <- activity.data.nonas$interval[i] - (hours * 100)
+        activity.nonas.norm.time$interval[i] <- (hours * 60) + mins
+    }
+}
+interval <- seq(0, 1435, by = 5)
+time.series.df <- data.frame(interval = interval,
+                             average.steps = rep(-1, length(interval)))
+for(i in 1:length(interval)) {
+    steps.in.interval.i <- vector(mode = "integer")
+    for(j in 1:length(activity.nonas.norm.time$interval)) {
+        if(activity.nonas.norm.time$interval[j] == interval[i]) {
+            steps.in.interval.i  <- c(steps.in.interval.i,
+                                      activity.nonas.norm.time$steps[j])
+        }
+    }
+    time.series.df$average.steps[i] <- mean(steps.in.interval.i)
+}
+
+```
+interval = 0  has average steps = `r time.series.df$average.steps[1]` should be  1.7  
+interval = 5  has average steps = `r time.series.df$average.steps[2]` should be 0.34  
+interval = 10 has average steps = `r time.series.df$average.steps[3]` should be 0.13  
 
 
 ## Imputing missing values
