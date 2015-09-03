@@ -100,10 +100,16 @@ for(i in 1:length(interval)) {
 }
 
 ```
+This section acts as test: REMOVE BEFORE FINAL CHECK-IN  
 interval = 0  has average steps = `r time.series.df$average.steps[1]` should be  1.7  
 interval = 5  has average steps = `r time.series.df$average.steps[2]` should be 0.34  
 interval = 10 has average steps = `r time.series.df$average.steps[3]` should be 0.13  
 
+```{r}
+p2 <- ggplot(time.series.df, aes(x = interval, y = average.steps))
+p2 <- p2 + geom_point(size = 4) + geom_line()
+print(p2)
+```
 
 ## Imputing missing values
 
