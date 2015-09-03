@@ -33,11 +33,11 @@ success <- file.rename(file.path(".", dataDir, csvFile),
 activity.data <- read.csv(file.path(".", dataDir, renameDataTo), header = TRUE)
 
 ```
-### Number of NA in the **steps** field
+### Number of NA values in the **steps** field
 ```{r}
 sum(is.na(activity.data$steps))
 ```
-### Number of records that have values in the **steps** field
+### Number of records that have (non-NA) values in the **steps** field
 
 ```{r}
 length(activity.data$steps) - sum(is.na(activity.data$steps))
@@ -89,14 +89,8 @@ interval <- seq(0, 1435, by = 5)
 time.series.df <- data.frame(interval = interval,
                              average.steps = rep(-1, length(interval)))
 for(i in 1:length(interval)) {
-    steps.in.interval.i <- vector(mode = "integer")
-    for(j in 1:length(activity.nonas.norm.time$interval)) {
-        if(activity.nonas.norm.time$interval[j] == interval[i]) {
-            steps.in.interval.i  <- c(steps.in.interval.i,
-                                      activity.nonas.norm.time$steps[j])
-        }
-    }
-    time.series.df$average.steps[i] <- mean(steps.in.interval.i)
+    intervalSteps <- filter(activity.nonas.norm.time, interval == interval[i])
+    time.series.df$average.steps[i] <- mean(intervalSteps$steps)
 }
 
 ```
@@ -107,7 +101,7 @@ interval = 10 has average steps = `r time.series.df$average.steps[3]` should be 
 
 ```{r}
 p2 <- ggplot(time.series.df, aes(x = interval, y = average.steps))
-p2 <- p2 + geom_point(size = 4) + geom_line()
+p2 <- p2 + geom_point(size = 2) + geom_line()
 print(p2)
 ```
 
