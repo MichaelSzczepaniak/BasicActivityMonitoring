@@ -20,12 +20,15 @@ fileUrl <- paste0("https://github.com/MichaelSzczepaniak/",
 renameZipTo <- "data.zip"
 renameDataTo <- "data.csv"
 download(fileUrl, file.path(".", dataDir, renameZipTo))
+# get the name of the data file from zip archive
 zipFiles <- unzip(file.path(".", dataDir, renameZipTo), list = TRUE)
 csvFile <- zipFiles$Name[1] # there should only be one file in this zip archive
+# unzip to the data directory
 unzip(file.path(".", dataDir, renameZipTo), exdir = file.path(".", dataDir))
 dataFiles <- list.files(file.path(".", dataDir))
 success <- file.rename(file.path(".", dataDir, csvFile),
                        file.path(".", dataDir, renameDataTo))
+# read the data file to a data.frame
 activity.data <- read.csv(file.path(".", dataDir, renameDataTo), header = TRUE)
 ```
 ### Number of NA values in the **steps** field
@@ -78,7 +81,7 @@ The median number of steps taken per day was 10765
 
 The **interval** field of the activity data records a data point every 5 
 minutes, but when it gets to 55, it jumps to 100 in order to designate that an 
-hour has passed.  Leaving the data in this form would create large gaps in the 
+hour has passed.  Leaving the data in this form would create gaps in the 
 time series plot of the averages, the following code normalizes these value 
 to remove these gaps
 
@@ -102,20 +105,37 @@ for(i in 1:length(interval)) {
     time.series.df$average.steps[i] <- mean(intervalSteps$steps)
 }
 ```
-This section acts as test: REMOVE BEFORE FINAL CHECK-IN  
+This section acts as a test: REMOVE BEFORE FINAL CHECK-IN  
 interval = 0  has average steps = 1.72 should be  1.7  
 interval = 5  has average steps = 0.34 should be 0.34  
 interval = 10 has average steps = 0.13 should be 0.13  
 
+With the gaps removed, the code below uses the **ggplot2** package to generate the 
+line plot (point symbols omitted):  
+
 
 ```r
 p2 <- ggplot(time.series.df, aes(x = interval, y = average.steps))
-p2 <- p2 + geom_point(size = 2) + geom_line()
+#p2 <- p2 + geom_point(size = 2)
+p2 <- p2 + geom_line()
 print(p2)
 ```
 
 ![](RepResearchPA1_files/figure-html/unnamed-chunk-6-1.png) 
+  
+The following code finds the 5-minute interval with the maximum number of 
+steps:  
+  
 
+```r
+indexOfMax <- which.max(time.series.df$average.steps)
+maxInterval <- time.series.df$interval[indexOfMax]
+maxSteps <- time.series.df$average.steps[indexOfMax]
+```
+
+The 5-minute interval where the maximum number of steps are taken is 
+515.  The maximum of average steps in the data was 206.17
+  
 ## Imputing missing values
 
 
