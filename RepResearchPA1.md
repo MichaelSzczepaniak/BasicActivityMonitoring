@@ -148,8 +148,7 @@ The 5-minute interval where the maximum number of steps are taken is
   
 ## Imputing missing values  
 ### Number of NA values in the **steps** field.
-#### (*Note: There are no missing values in the **date** or **interval** 
-fields.*)
+#### (*Note: There are no missing values in the **date** or **interval** fields.*)
 
 ```r
 sum(is.na(activity.data$steps))
@@ -159,8 +158,7 @@ sum(is.na(activity.data$steps))
 ## [1] 2304
 ```
 
-### Missing values in the **steps** field were imputed using the average value 
-for steps in that particular interval.
+### Missing values in the **steps** field were imputed using the average value for steps in that particular interval.
 
 
 ```r
@@ -185,12 +183,26 @@ for(i in 1:length(activity.data.normalized$interval)) {
 # generate the second histogram
 daily.steps <- getDailySteps(activity.data.normalized)
 t <- "Total Daily Steps Taken 2012-10-02 thru 2012-11-29"
-t <- paste0(t, "\n(NAs imputed with inveral average)")
+t <- paste0(t, "\n(NAs imputed with interval average)")
 createHistogram(daily.steps, "Total.Steps", "blue", "white",
                 1000, seq(0, 20, 2), t, "Total Daily Steps")
 ```
 
 ![](RepResearchPA1_files/figure-html/unnamed-chunk-7-1.png) 
 
+```r
+# calculate the new mean and median values
+mean.imp <- mean(daily.steps$Total.Steps)
+median.imp <- median(daily.steps$Total.Steps)
+```
+  
+After imputting NAs, **mean** number of steps taken per day = 10766.19  
+After imputing NAs, **median** number of steps taken per day = 10766.19
+
+Imputting the NAs in the way described above did not change the value of the 
+**mean**.  The **median** value changed only slightly because it was already 
+very close to the mean.  The only noticable change is the lengthening of the bin 
+containing the mean in the histogram.  These results were to be expected since 
+we added more mean values to the data. 
   
 ## Are there differences in activity patterns between weekdays and weekends?
