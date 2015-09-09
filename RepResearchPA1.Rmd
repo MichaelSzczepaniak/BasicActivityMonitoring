@@ -10,7 +10,7 @@ output:
 ```{r}
 library(downloader)
 library(utils)
-library(ggplot2)
+
 dataDir <- "data"
 if(!file.exists(dataDir)) {
     dir.create(file.path(".", dataDir))
@@ -36,38 +36,51 @@ success <- file.rename(file.path(".", dataDir, csvFile),
 activity.data <- read.csv(file.path(".", dataDir, renameDataTo), header = TRUE)
 
 ```
-### Number of NA values in the **steps** field
-```{r}
-sum(is.na(activity.data$steps))
-```
-### Number of records that have (non-NA) values in the **steps** field
-
-```{r}
-length(activity.data$steps) - sum(is.na(activity.data$steps))
-```
+  
 ## What is mean total number of steps taken per day?
 
 ```{r}
-options(scipen = 3, digits = 2)
+library(ggplot2)
 suppressMessages(suppressWarnings(require(dplyr)))
+options(scipen = 3, digits = 2)
 activity.data.nonas <- filter(activity.data, !is.na(steps))
-activity.byday <- group_by(activity.data.nonas, date)
-activity.summ <- summarize(activity.byday, Total.Steps = sum(steps),
-                                           Mean.Steps = mean(steps))
+
+getDailySteps <- function(act.data) {
+    suppressMessages(suppressWarnings(require(dplyr)))
+    activity.byday <- group_by(act.data, date)
+    activity.summ <- summarize(activity.byday, Total.Steps = sum(steps),
+                               Mean.Steps = mean(steps))
+    
+    return(activity.summ)
+}
+
+activity.summ <- getDailySteps(activity.data.nonas)
 steps.mean <- mean(activity.summ$Total.Steps)
 steps.median <- median(activity.summ$Total.Steps)
-#hist(activity.summ$Total.Steps) # base plotting system
-p <- ggplot(activity.summ, aes(x = Total.Steps))
-p <- p + geom_histogram(colour = "darkgreen", fill = "white", binwidth = 1000)
-p <- p + scale_y_continuous(breaks=seq(0, 11, 1))  # Ticks from 0-11, every 1
-p <- p + ggtitle("Total Daily Steps Taken 2012-10-02 thru 2012-11-29")
-p <- p + labs(x = "Total Daily Steps")
-# add vertical line for mean and median
-print(p)
+
+## Creates a historgram from the following parameters:
+##
+createHistogram <- function(plot.data, x.data, bar.outline.color, bar.fill,
+                            bin.size, y.breaks, plot.title, x.label) {
+    # Use aes_string to pass column by name as a string:
+    # http://stackoverflow.com/questions/15458526
+    p <- ggplot(plot.data, aes_string(x = x.data))
+    p <- p + geom_histogram(colour=bar.outline.color, fill=bar.fill,
+                            binwidth=bin.size)
+    p <- p + scale_y_continuous(breaks=y.breaks)
+    p <- p + ggtitle(plot.title)
+    p <- p + labs(x = x.label)
+    # add vertical line for mean and median
+    print(p)
+}
+title <- "Total Daily Steps Taken 2012-10-02 thru 2012-11-29"
+createHistogram(activity.summ, "Total.Steps", "darkgreen", "white",
+                1000, seq(0, 11, 1), title, "Total Daily Steps")
+
 ```
 
-The mean number of steps taken per day was `r steps.mean`  
-The median number of steps taken per day was `r steps.median`  
+The **mean** number of steps taken per day was `r steps.mean`  
+The **median** number of steps taken per day was `r steps.median`  
 
 ## What is the average daily activity pattern?
 
@@ -78,21 +91,29 @@ time series plot of the averages, the following code normalizes these value
 to remove these gaps
 
 ```{r}
-activity.nonas.norm.time <- data.frame(steps = activity.data.nonas$steps,
-                                       date = activity.data.nonas$date,
-                                       interval = activity.data.nonas$interval)
-for(i in 2:length(activity.data.nonas$interval)) {
-    if(activity.data.nonas$interval[i] >= 100) {
-        hours <- trunc(activity.data.nonas$interval[i] / 100)
-        mins <- activity.data.nonas$interval[i] - (hours * 100)
-        activity.nonas.norm.time$interval[i] <- (hours * 60) + mins
+## Converts the interval field to the actual accumulated time. E.g. if interval
+## value is 105, the actual value is 65 accumulated minutes.
+normalizeInterval <- function(df = activity.data.nonas) {
+    activity.nonas.norm.time <- data.frame(steps = df$steps,
+                                           date = df$date,
+                                           interval = df$interval)
+    for(i in 2:length(df$interval)) {
+        if(df$interval[i] >= 100) {
+            hours <- trunc(df$interval[i] / 100)
+            mins <- df$interval[i] - (hours * 100)
+            activity.nonas.norm.time$interval[i] <- (hours * 60) + mins
+        }
     }
+    
+    return(activity.nonas.norm.time)
 }
+
 interval <- seq(0, 1435, by = 5)
 time.series.df <- data.frame(interval = interval,
                              average.steps = rep(-1, length(interval)))
+normalized.activity <- normalizeInterval()
 for(i in 1:length(interval)) {
-    intervalSteps <- filter(activity.nonas.norm.time, interval == interval[i])
+    intervalSteps <- filter(normalized.activity, interval == interval[i])
     time.series.df$average.steps[i] <- mean(intervalSteps$steps)
 }
 
@@ -124,8 +145,44 @@ maxSteps <- time.series.df$average.steps[indexOfMax]
 The 5-minute interval where the maximum number of steps are taken is 
 `r maxInterval`.  The maximum of average steps in the data was `r maxSteps`
   
-## Imputing missing values
+## Imputing missing values  
+### Number of NA values in the **steps** field.
+#### (*Note: There are no missing values in the **date** or **interval** 
+fields.*)
+```{r}
+sum(is.na(activity.data$steps))
+```
 
+### Missing values in the **steps** field were imputed using the average value 
+for steps in that particular interval.
 
+```{r}
+# normalize the interval field as was done before
+activity.data.normalized <- normalizeInterval(activity.data)
 
+## Returns the value of average.steps for given interval.value
+getAverageSteps <- function(interval.value, df.with.averages = time.series.df) {
+    indexOfInterval <- which(df.with.averages$interval == interval.value)
+    return(df.with.averages$average.steps[indexOfInterval])
+}
+
+# Iterate through the normalized activity data and replace NAs with averages
+# for the particular interval
+for(i in 1:length(activity.data.normalized$interval)) {
+    if(is.na(activity.data.normalized$steps[i])) {
+        activity.data.normalized$steps[i] <- 
+            getAverageSteps(activity.data.normalized$interval[i])
+    }
+}
+
+# generate the second histogram
+daily.steps <- getDailySteps(activity.data.normalized)
+t <- "Total Daily Steps Taken 2012-10-02 thru 2012-11-29"
+t <- paste0(t, "\n(NAs imputed with interval average)")
+createHistogram(daily.steps, "Total.Steps", "blue", "white",
+                1000, seq(0, 20, 2), t, "Total Daily Steps")
+
+```
+
+  
 ## Are there differences in activity patterns between weekdays and weekends?
