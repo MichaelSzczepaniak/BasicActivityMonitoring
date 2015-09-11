@@ -115,10 +115,6 @@ for(i in 1:length(interval)) {
     time.series.df$average.steps[i] <- mean(intervalSteps$steps)
 }
 ```
-This section acts as a test: REMOVE BEFORE FINAL CHECK-IN  
-interval = 0  has average steps = 1.72 should be  1.7  
-interval = 5  has average steps = 0.34 should be 0.34  
-interval = 10 has average steps = 0.13 should be 0.13  
 
 With the gaps removed, the code below uses the **ggplot2** package to generate the 
 line plot (point symbols omitted):  
@@ -126,6 +122,8 @@ line plot (point symbols omitted):
 
 ```r
 p2 <- ggplot(time.series.df, aes(x = interval, y = average.steps))
+p2 <- p2 + ggtitle("Average Daily Steps Per 5-Minute Time Interval")
+p2 <- p2 + labs(x = "Interval", y = "Average Steps")
 #p2 <- p2 + geom_point(size = 2)
 p2 <- p2 + geom_line()
 print(p2)
@@ -147,7 +145,7 @@ The 5-minute interval where the maximum number of steps are taken is
 515.  The maximum of average steps in the data was 206.17
   
 ## Imputing missing values  
-### Number of NA values in the **steps** field.
+### Number of missing (NA) values in the **steps** field.
 #### (*Note: There are no missing values in the **date** or **interval** fields.*)
 
 ```r
@@ -206,3 +204,51 @@ containing the mean in the histogram.  These results were to be expected since
 we added more mean values to the data. 
   
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```r
+isWeekday <- function(date.yyyy.mm.dd) {
+    d <- as.POSIXlt(date.yyyy.mm.dd)
+    if(d$wday %in% c(1:5)) {
+        return("weekday")
+    }
+    else {
+        return("weekend")
+    }
+}
+
+activity.data.normalized$day.type <-
+    sapply(activity.data.normalized$date, isWeekday)
+
+activity.data.normalized <- mutate(activity.data.normalized,
+                                   day.type = as.factor(day.type))
+
+interval <- seq(0, 1435, by = 5)
+time.series.df.imputed <-
+    data.frame(interval = interval,
+               day.type = as.factor(c(rep("weekday", length(interval)),
+                                      rep("weekend", length(interval)))),
+               average.steps = rep(-1, 2 *length(interval)))
+
+stepsWeekdays <- filter(activity.data.normalized, day.type == "weekday")
+for(i in 1:length(interval)) {
+    intervalStepsWeekdays <- filter(stepsWeekdays, interval == interval[i])
+    time.series.df.imputed$average.steps[i] <- 
+        mean(intervalStepsWeekdays$steps)
+}
+
+stepsWeekends <- filter(activity.data.normalized, day.type == "weekend")
+j.start <- length(interval) + 1
+for(j in j.start:(2*length(interval))) {
+    intervalStepsWeekends <- filter(stepsWeekends, interval == interval[j])
+    time.series.df.imputed$average.steps[j] <- 
+        mean(intervalStepsWeekends$steps)
+}
+
+g <- ggplot(time.series.df.imputed,
+            aes(x = interval, y = average.steps, fill = day.type))
+g <- g + geom_line()
+g <- g+ facet_grid(day.type ~ .)
+print(g)
+```
+
+![](RepResearchPA1_files/figure-html/unnamed-chunk-8-1.png) 
