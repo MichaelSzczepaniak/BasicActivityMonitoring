@@ -98,8 +98,10 @@ activity.data &lt;- read.csv(file.path(&quot;.&quot;, dataDir, renameDataTo), he
 <pre class="r"><code>library(ggplot2)
 suppressMessages(suppressWarnings(require(dplyr)))
 options(scipen = 3, digits = 2)
+# remove NAs for the histogram
 activity.data.nonas &lt;- filter(activity.data, !is.na(steps))
 
+## Returns a data.frame with the total and mean number of steps per day
 getDailySteps &lt;- function(act.data) {
     suppressMessages(suppressWarnings(require(dplyr)))
     activity.byday &lt;- group_by(act.data, date)
@@ -115,6 +117,14 @@ steps.median &lt;- median(activity.summ$Total.Steps)
 
 ## Creates a historgram from the following parameters:
 ##
+## plot.data - data.frame containing the data used to build the histogram
+## x.data - the column (field) in plot.data used to build the histogram
+## bar.outline.color - color used to outline the bars of the histogram
+## bar.fill - color used to fill the bars of the histogram
+## bin.size - bin size used to construct bars of the histogram
+## y.breaks - sequence used to delineate y-axis values
+## plot.title - title of the plot
+## x.label - label for the x-axis
 createHistogram &lt;- function(plot.data, x.data, bar.outline.color, bar.fill,
                             bin.size, y.breaks, plot.title, x.label) {
     # Use aes_string to pass column by name as a string:
@@ -154,6 +164,7 @@ normalizeInterval &lt;- function(df = activity.data.nonas) {
     return(activity.nonas.norm.time)
 }
 
+# build the data.frame to construct the time series plot
 interval &lt;- seq(0, 1435, by = 5)
 time.series.df &lt;- data.frame(interval = interval,
                              average.steps = rep(-1, length(interval)))
@@ -222,7 +233,8 @@ median.imp &lt;- median(daily.steps$Total.Steps)</code></pre>
 </div>
 <div id="are-there-differences-in-activity-patterns-between-weekdays-and-weekends" class="section level2">
 <h2>Are there differences in activity patterns between weekdays and weekends?</h2>
-<pre class="r"><code>isWeekday &lt;- function(date.yyyy.mm.dd) {
+<pre class="r"><code>## Classifies the passed in string as either &quot;weekday&quot; or &quot;weekend&quot;
+isWeekday &lt;- function(date.yyyy.mm.dd) {
     d &lt;- as.POSIXlt(date.yyyy.mm.dd)
     if(d$wday %in% c(1:5)) {
         return(&quot;weekday&quot;)
@@ -232,6 +244,8 @@ median.imp &lt;- median(daily.steps$Total.Steps)</code></pre>
     }
 }
 
+# Create the data.frame used to construct the weekday/weekend panel plot.
+# Start by adding a new column to designate the type of day the data is from.
 activity.data.normalized$day.type &lt;-
     sapply(activity.data.normalized$date, isWeekday)
 
@@ -245,13 +259,14 @@ time.series.df.imputed &lt;-
                                       rep(&quot;weekend&quot;, length(interval)))),
                average.steps = rep(-1, 2 *length(interval)))
 
+# populate the weekday averages
 stepsWeekdays &lt;- filter(activity.data.normalized, day.type == &quot;weekday&quot;)
 for(i in 1:length(interval)) {
     intervalStepsWeekdays &lt;- filter(stepsWeekdays, interval == interval[i])
     time.series.df.imputed$average.steps[i] &lt;- 
         mean(intervalStepsWeekdays$steps)
 }
-
+# populate the weekend averages
 stepsWeekends &lt;- filter(activity.data.normalized, day.type == &quot;weekend&quot;)
 j.start &lt;- length(interval) + 1
 for(j in j.start:(2*length(interval))) {
@@ -260,6 +275,7 @@ for(j in j.start:(2*length(interval))) {
         mean(intervalStepsWeekends$steps)
 }
 
+# make the two panel plot
 p3 &lt;- ggplot(time.series.df.imputed,
             aes(x = interval, y = average.steps, fill = day.type))
 p3 &lt;- p3 + ggtitle(&quot;Average Daily Steps By Weekday and Weekend&quot;)

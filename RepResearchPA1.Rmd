@@ -43,8 +43,10 @@ activity.data <- read.csv(file.path(".", dataDir, renameDataTo), header = TRUE)
 library(ggplot2)
 suppressMessages(suppressWarnings(require(dplyr)))
 options(scipen = 3, digits = 2)
+# remove NAs for the histogram
 activity.data.nonas <- filter(activity.data, !is.na(steps))
 
+## Returns a data.frame with the total and mean number of steps per day
 getDailySteps <- function(act.data) {
     suppressMessages(suppressWarnings(require(dplyr)))
     activity.byday <- group_by(act.data, date)
@@ -60,6 +62,14 @@ steps.median <- median(activity.summ$Total.Steps)
 
 ## Creates a historgram from the following parameters:
 ##
+## plot.data - data.frame containing the data used to build the histogram
+## x.data - the column (field) in plot.data used to build the histogram
+## bar.outline.color - color used to outline the bars of the histogram
+## bar.fill - color used to fill the bars of the histogram
+## bin.size - bin size used to construct bars of the histogram
+## y.breaks - sequence used to delineate y-axis values
+## plot.title - title of the plot
+## x.label - label for the x-axis
 createHistogram <- function(plot.data, x.data, bar.outline.color, bar.fill,
                             bin.size, y.breaks, plot.title, x.label) {
     # Use aes_string to pass column by name as a string:
@@ -108,6 +118,7 @@ normalizeInterval <- function(df = activity.data.nonas) {
     return(activity.nonas.norm.time)
 }
 
+# build the data.frame to construct the time series plot
 interval <- seq(0, 1435, by = 5)
 time.series.df <- data.frame(interval = interval,
                              average.steps = rep(-1, length(interval)))
@@ -196,6 +207,7 @@ we added more mean values to the data.
   
 ## Are there differences in activity patterns between weekdays and weekends?
 ```{r}
+## Classifies the passed in string as either "weekday" or "weekend"
 isWeekday <- function(date.yyyy.mm.dd) {
     d <- as.POSIXlt(date.yyyy.mm.dd)
     if(d$wday %in% c(1:5)) {
@@ -206,6 +218,8 @@ isWeekday <- function(date.yyyy.mm.dd) {
     }
 }
 
+# Create the data.frame used to construct the weekday/weekend panel plot.
+# Start by adding a new column to designate the type of day the data is from.
 activity.data.normalized$day.type <-
     sapply(activity.data.normalized$date, isWeekday)
 
@@ -219,13 +233,14 @@ time.series.df.imputed <-
                                       rep("weekend", length(interval)))),
                average.steps = rep(-1, 2 *length(interval)))
 
+# populate the weekday averages
 stepsWeekdays <- filter(activity.data.normalized, day.type == "weekday")
 for(i in 1:length(interval)) {
     intervalStepsWeekdays <- filter(stepsWeekdays, interval == interval[i])
     time.series.df.imputed$average.steps[i] <- 
         mean(intervalStepsWeekdays$steps)
 }
-
+# populate the weekend averages
 stepsWeekends <- filter(activity.data.normalized, day.type == "weekend")
 j.start <- length(interval) + 1
 for(j in j.start:(2*length(interval))) {
@@ -234,6 +249,7 @@ for(j in j.start:(2*length(interval))) {
         mean(intervalStepsWeekends$steps)
 }
 
+# make the two panel plot
 p3 <- ggplot(time.series.df.imputed,
             aes(x = interval, y = average.steps, fill = day.type))
 p3 <- p3 + ggtitle("Average Daily Steps By Weekday and Weekend")
@@ -243,4 +259,3 @@ p3 <- p3+ facet_grid(day.type ~ .)
 print(p3)
 ```
   
-One interesting observation that can be quickly made from the above panel plots is that it appears the subject typically sleeps in on weekends.
