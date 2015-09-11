@@ -76,8 +76,8 @@ createHistogram(activity.summ, "Total.Steps", "darkgreen", "white",
 
 ![](RepResearchPA1_files/figure-html/unnamed-chunk-2-1.png) 
 
-The **mean** number of steps taken per day was 10766.19  
-The **median** number of steps taken per day was 10765  
+The **mean** number of steps taken per day was **10766.19**  
+The **median** number of steps taken per day was **10765**  
 
 ## What is the average daily activity pattern?
 
@@ -123,7 +123,7 @@ line plot (point symbols omitted):
 ```r
 p2 <- ggplot(time.series.df, aes(x = interval, y = average.steps))
 p2 <- p2 + ggtitle("Average Daily Steps Per 5-Minute Time Interval")
-p2 <- p2 + labs(x = "Interval", y = "Average Steps")
+p2 <- p2 + labs(x = "Time Interval (minutes)", y = "Average Steps")
 #p2 <- p2 + geom_point(size = 2)
 p2 <- p2 + geom_line()
 print(p2)
@@ -142,7 +142,8 @@ maxSteps <- time.series.df$average.steps[indexOfMax]
 ```
 
 The 5-minute interval where the maximum number of steps are taken is 
-515.  The maximum of average steps in the data was 206.17
+**515**.  
+The maximum of average steps in the data was **206.17**
   
 ## Imputing missing values  
 ### Number of missing (NA) values in the **steps** field.
@@ -194,8 +195,8 @@ mean.imp <- mean(daily.steps$Total.Steps)
 median.imp <- median(daily.steps$Total.Steps)
 ```
   
-After imputting NAs, **mean** number of steps taken per day = 10766.19  
-After imputing NAs, **median** number of steps taken per day = 10766.19
+After imputting NAs, **mean** number of steps taken per day = **10766.19**  
+After imputing NAs, **median** number of steps taken per day = **10766.19**
 
 Imputting the NAs in the way described above did not change the value of the 
 **mean**.  The **median** value changed only slightly because it was already 
@@ -244,11 +245,13 @@ for(j in j.start:(2*length(interval))) {
         mean(intervalStepsWeekends$steps)
 }
 
-g <- ggplot(time.series.df.imputed,
+p3 <- ggplot(time.series.df.imputed,
             aes(x = interval, y = average.steps, fill = day.type))
-g <- g + geom_line()
-g <- g+ facet_grid(day.type ~ .)
-print(g)
+p3 <- p3 + ggtitle("Average Daily Steps By Weekday and Weekend")
+p3 <- p3 + labs(x = "Time Interval (minutes)", y = "Average Steps")
+p3 <- p3 + geom_line()
+p3 <- p3+ facet_grid(day.type ~ .)
+print(p3)
 ```
 
 ![](RepResearchPA1_files/figure-html/unnamed-chunk-8-1.png) 
