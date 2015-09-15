@@ -67,7 +67,9 @@ steps.median <- median(activity.summ$Total.Steps)
 ## plot.title - title of the plot
 ## x.label - label for the x-axis
 createHistogram <- function(plot.data, x.data, bar.outline.color, bar.fill,
-                            bin.size, y.breaks, plot.title, x.label) {
+                            bin.size, y.breaks, plot.title, x.label,
+                            verticalMean = FALSE, x.mean = 0,
+                            verticalMedian = FALSE, x.median = 0) {
     # Use aes_string to pass column by name as a string:
     # http://stackoverflow.com/questions/15458526
     p <- ggplot(plot.data, aes_string(x = x.data))
@@ -76,12 +78,23 @@ createHistogram <- function(plot.data, x.data, bar.outline.color, bar.fill,
     p <- p + scale_y_continuous(breaks=y.breaks)
     p <- p + ggtitle(plot.title)
     p <- p + labs(x = x.label)
+    
     # add vertical line for mean and median
+    if(verticalMean) {
+        vline1.data <- data.frame(x = x.mean)
+        p <- p + geom_vline(aes(xintercept = x), data = vline1.data, size = 1.5)
+    }
+    if(verticalMedian) {
+        vline2.data <- data.frame(x = x.median)
+        p <- p + geom_vline(aes(xintercept = x), data = vline2.data, size = 1.5)
+    }
+    
     print(p)
 }
 title <- "Total Daily Steps Taken 2012-10-02 thru 2012-11-29"
 createHistogram(activity.summ, "Total.Steps", "darkgreen", "white",
-                1000, seq(0, 11, 1), title, "Total Daily Steps")
+                1000, seq(0, 11, 1), title, "Total Daily Steps",
+                verticalMean = TRUE, x.mean = steps.mean)
 ```
 
 ![](RepResearchPA1_files/figure-html/unnamed-chunk-2-1.png) 
