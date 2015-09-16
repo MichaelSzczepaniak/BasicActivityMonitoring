@@ -70,8 +70,7 @@ createHistogram <- function(plot.data, x.data, bar.outline.color, bar.fill,
                             bin.size, y.breaks, plot.title, x.label,
                             verticalMean = FALSE, x.mean = 0,
                             verticalMedian = FALSE, x.median = 0) {
-    # Use aes_string to pass column by name as a string:
-    # http://stackoverflow.com/questions/15458526
+    # Use aes_string to pass column by name as a string
     p <- ggplot(plot.data, aes_string(x = x.data))
     p <- p + geom_histogram(colour=bar.outline.color, fill=bar.fill,
                             binwidth=bin.size)
@@ -81,8 +80,11 @@ createHistogram <- function(plot.data, x.data, bar.outline.color, bar.fill,
     
     # add vertical line for mean and median
     if(verticalMean) {
-        vline1.data <- data.frame(x = x.mean)
-        p <- p + geom_vline(aes(xintercept = x), data = vline1.data, size = 1.5)
+        vline1.data <- data.frame(x = x.mean, colour = c("mean"))
+        p <- p + geom_vline(aes(xintercept = x, colour = colour),
+                            data = vline1.data, size = 1.5,
+                            show_guide = TRUE)
+        p <- p + theme(legend.position=c(0.85,0.85), legend.title=element_blank())
     }
     if(verticalMedian) {
         vline2.data <- data.frame(x = x.median)
@@ -205,19 +207,17 @@ for(i in 1:length(activity.data.normalized$interval)) {
 
 # generate the second histogram
 daily.steps <- getDailySteps(activity.data.normalized)
-t <- "Total Daily Steps Taken 2012-10-02 thru 2012-11-29"
-t <- paste0(t, "\n(NAs imputed with interval average)")
-createHistogram(daily.steps, "Total.Steps", "blue", "white",
-                1000, seq(0, 20, 2), t, "Total Daily Steps")
-```
-
-![](RepResearchPA1_files/figure-html/unnamed-chunk-7-1.png) 
-
-```r
 # calculate the new mean and median values
 mean.imp <- mean(daily.steps$Total.Steps)
 median.imp <- median(daily.steps$Total.Steps)
+t <- "Total Daily Steps Taken 2012-10-02 thru 2012-11-29"
+t <- paste0(t, "\n(NAs imputed with interval average)")
+createHistogram(daily.steps, "Total.Steps", "blue", "white",
+                1000, seq(0, 20, 2), t, "Total Daily Steps",
+                verticalMean = TRUE, x.mean = mean.imp)
 ```
+
+![](RepResearchPA1_files/figure-html/unnamed-chunk-7-1.png) 
   
 After imputting NAs, **mean** number of steps taken per day = **10766.19**  
 After imputing NAs, **median** number of steps taken per day = **10766.19**
